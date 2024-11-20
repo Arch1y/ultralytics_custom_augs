@@ -18,6 +18,8 @@ from ultralytics.utils.metrics import bbox_ioa
 from ultralytics.utils.ops import segment2box, xyxyxyxy2xywhr
 from ultralytics.utils.torch_utils import TORCHVISION_0_10, TORCHVISION_0_11, TORCHVISION_0_13
 
+import albumentations as A
+
 DEFAULT_MEAN = (0.0, 0.0, 0.0)
 DEFAULT_STD = (1.0, 1.0, 1.0)
 DEFAULT_CROP_FRACTION = 1.0
@@ -515,8 +517,9 @@ class Mosaic(BaseMixTransform):
         >>> mosaic_aug = Mosaic(dataset, imgsz=640, p=0.5, n=4)
         >>> augmented_labels = mosaic_aug(original_labels)
     """
-
-    def __init__(self, dataset, imgsz=640, p=1.0, n=4):
+    
+    # change n=4 -> n=9, as it increases variety
+    def __init__(self, dataset, imgsz=640, p=1.0, n=9):
         """
         Initializes the Mosaic augmentation object.
 
@@ -653,6 +656,45 @@ class Mosaic(BaseMixTransform):
 
         final_labels["img"] = img3[-self.border[0] : self.border[0], -self.border[1] : self.border[1]]
         return final_labels
+    
+    def _yolo_to_opencv_bbox(self, yolo_bboxes, image_width, image_height):
+        opencv_bboxes = []
+        
+        for bbox in yolo_bboxes:
+            x_center, y_center, width, height = bbox
+            
+            x_center *= image_width
+            y_center *= image_height
+            width *= image_width
+            height *= image_height
+            
+            x_min = int(x_center - width / 2)
+            y_min = int(y_center - height / 2)
+            x_max = int(x_min + width)
+            y_max = int(y_min + height)
+            opencv_bboxes.append([x_min, y_min, x_max, y_max])
+            
+        return opencv_bboxes
+    
+    def _crop_by_bbox(self, image, labels, cls_instances, crop_size):
+        transform = A.Compose([A.CropNonEmptyMaskIfExists(height=crop_size[0], width=crop_size[1], p=1)] , 
+                            bbox_params=A.BboxParams(format='yolo', min_visibility=0.25, label_fields=['class_labels']))
+        defect_bbox = self._yolo_to_opencv_bbox(labels.bboxes, image.shape[1], image.shape[0])
+        mask = np.zeros(image.shape[:2], dtype=np.uint8)
+        for x1, y1, x2, y2 in defect_bbox:
+            mask[y1:y2, x1:x2] = 1
+        
+        transformed = transform(image=image, mask=mask, bboxes=np.array(labels.bboxes), class_labels=np.array(cls_instances))
+        while len(transformed['bboxes']) == 0:
+            transformed = transform(image=image, mask=mask, bboxes=np.array(labels.bboxes), class_labels=np.array(cls_instances))
+        
+        cropped_bboxes = np.array(transformed['bboxes'])
+        cropped_bboxes[cropped_bboxes<0] = 0
+        cropped_bboxes[cropped_bboxes>1] = 1
+        
+        labels.update(bboxes=cropped_bboxes)
+        cls_instance = np.array(transformed['class_labels'])
+        return transformed['image'], labels, cls_instance, transformed['image'].shape[:2]
 
     def _mosaic4(self, labels):
         """
@@ -686,7 +728,14 @@ class Mosaic(BaseMixTransform):
             # Load image
             img = labels_patch["img"]
             h, w = labels_patch.pop("resized_shape")
-
+            # with 50% probability crop input
+            # image by bbox
+            rand_val = random.randint(0,1)
+            if rand_val!=0:
+                # print('CROP', i)
+                labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(img, labels_patch['instances'], labels_patch['cls'], (h//2, w//2))
+                img = labels_patch['img']
+                
             # Place img in img4
             if i == 0:  # top left
                 img4 = np.full((s * 2, s * 2, img.shape[2]), 114, dtype=np.uint8)  # base image with 4 tiles
@@ -746,6 +795,14 @@ class Mosaic(BaseMixTransform):
             # Load image
             img = labels_patch["img"]
             h, w = labels_patch.pop("resized_shape")
+            
+            # with 50% probability crop input
+            # image by bbox
+            rand_val = random.randint(0,1)
+            if rand_val!=0:
+                # print('CROP', i)
+                labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(img, labels_patch['instances'], labels_patch['cls'], (h//2, w//2))
+                img = labels_patch['img']
 
             # Place img in img9
             if i == 0:  # center
@@ -785,7 +842,7 @@ class Mosaic(BaseMixTransform):
         return final_labels
 
     @staticmethod
-    def _update_labels(labels, padw, padh):
+    def _update_labels(labels, padw, padh):#, crop_size=None):
         """
         Updates label coordinates with padding values.
 
@@ -806,6 +863,7 @@ class Mosaic(BaseMixTransform):
             >>> updated_labels = Mosaic._update_labels(labels, padw, padh)
         """
         nh, nw = labels["img"].shape[:2]
+        # print(nh, nw, padw, padh)
         labels["instances"].convert_bbox(format="xyxy")
         labels["instances"].denormalize(nw, nh)
         labels["instances"].add_padding(padw, padh)
