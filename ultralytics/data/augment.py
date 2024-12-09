@@ -739,10 +739,10 @@ class Mosaic(BaseMixTransform):
             img = labels_patch["img"]
             h, w = labels_patch.pop("resized_shape")
             
-            if h > 1024: h_crop = 1024
-            if w > 1024: w_crop = 1024
+            if h > 1024: h = 1024
+            if w > 1024: w = 1024
 
-            labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(img, labels_patch['instances'], labels_patch['cls'], (h_crop, w_crop))
+            labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(img, labels_patch['instances'], labels_patch['cls'], (h, w))
             img = labels_patch['img']
 
             # Place img in img4
@@ -805,10 +805,10 @@ class Mosaic(BaseMixTransform):
             img = labels_patch["img"]
             h, w = labels_patch.pop("resized_shape")
             
-            if h > 1024: h_crop = 1024
-            if w > 1024: w_crop = 1024
+            if h > 1024: h = 1024
+            if w > 1024: w = 1024
 
-            labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(img, labels_patch['instances'], labels_patch['cls'], (h_crop, w_crop))
+            labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(img, labels_patch['instances'], labels_patch['cls'], (h, w))
             img = labels_patch['img']
 
             # Place img in img9
