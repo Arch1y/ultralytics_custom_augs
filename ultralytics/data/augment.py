@@ -633,8 +633,12 @@ class Mosaic(BaseMixTransform):
             transform = A.Compose([A.CropNonEmptyMaskIfExists(height=crop_size[0], width=crop_size[1], p=1)] , 
                             bbox_params=A.BboxParams(format='yolo', min_visibility=0.25, label_fields=['class_labels']))
             transformed = transform(image=image, mask=mask, bboxes=np.array(labels.bboxes), class_labels=np.array(cls_instances))
+            count = 0
             while len(transformed['bboxes']) == 0:
+                if count >=5:
+                    break
                 transformed = transform(image=image, mask=mask, bboxes=np.array(labels.bboxes), class_labels=np.array(cls_instances))
+                count += 1
         
         if len(transformed['bboxes']) == 0:
             cropped_bboxes = np.array((0.0, 0.0, 0.0, 0.0))
