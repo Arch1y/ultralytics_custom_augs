@@ -89,9 +89,9 @@ def build_yolo_dataset(cfg, img_path, batch, data, mode="train", rect=False, str
         imgsz=cfg.imgsz,
         batch_size=batch,
         # augment=mode == "train",  # augmentation
-        augment= True,  # augmentation
+        augment=True,  # augmentation
         hyp=cfg,  # TODO: probably add a get_hyps_from_cfg function
-        rect=cfg.rect or rect,  # rectangular batches
+        rect=False, #cfg.rect or rect,  # rectangular batches
         cache=cfg.cache or None,
         single_cls=cfg.single_cls or False,
         stride=int(stride),
