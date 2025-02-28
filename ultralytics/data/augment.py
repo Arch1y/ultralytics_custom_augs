@@ -618,7 +618,7 @@ class Mosaic(BaseMixTransform):
     
     def _crop_by_bbox(self, image, labels, cls_instances, crop_size):
         # crop by mask or random
-        rand_val = random.randint(0,10)            
+        rand_val = random.randint(0,10)
         if rand_val >= 8:
             # print('crop by bg')
             transform = A.Compose([A.RandomCrop(height=crop_size[0], width=crop_size[1], p=1)], 
