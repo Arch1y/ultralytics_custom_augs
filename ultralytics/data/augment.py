@@ -597,7 +597,7 @@ class Mosaic(BaseMixTransform):
             self._mosaic3(labels) if self.n == 3 else self._mosaic4(labels) if self.n == 4 else self._mosaic9(labels)
         )  # This code is modified for mosaic3 method.
         
-    def _yolo_to_opencv_bbox(self, yolo_bboxes, image_width, image_height):
+    def _yolo_to_opencv_bbox(self, yolo_bboxes, image_height, image_width):
         opencv_bboxes = []
         
         for bbox in yolo_bboxes:
@@ -616,8 +616,13 @@ class Mosaic(BaseMixTransform):
             
         return opencv_bboxes
     
-    def _crop_by_bbox(self, image, labels, cls_instances, crop_size):
+    def _crop_by_bbox(self, labels_patch, crop_size):
         # crop by mask or random
+        labels = labels_patch['instances']
+        img_path = labels_patch['im_file']
+        image = cv2.imread(img_path)
+        cls_instances = labels_patch['cls']
+
         rand_val = random.randint(0,10)            
         if rand_val >= 8:
             # print('crop by bg')
@@ -650,7 +655,7 @@ class Mosaic(BaseMixTransform):
         
         labels.update(bboxes=cropped_bboxes)
         return transformed['image'], labels, cls_instance, transformed['image'].shape[:2]
-
+    
     def _mosaic3(self, labels):
         """
         Creates a 1x3 image mosaic by combining three images.
@@ -806,13 +811,11 @@ class Mosaic(BaseMixTransform):
         for i in range(9):
             labels_patch = labels if i == 0 else labels["mix_labels"][i - 1]
             # Load image
-            img = labels_patch["img"]
-            h, w = labels_patch.pop("resized_shape")
-            
-            if h > 1024: h = 1024
-            if w > 1024: w = 1024
-
-            labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(img, labels_patch['instances'], labels_patch['cls'], (h, w))
+            h_img, w_img = labels_patch['ori_shape']
+            h = h_img if h_img < 1024 else 1024
+            w = w_img if w_img < 1024 else 1024
+            # labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(img, labels_patch['instances'], labels_patch['cls'], (h, w))
+            labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(labels_patch, (h, w))
             img = labels_patch['img']
 
             # Place img in img9
