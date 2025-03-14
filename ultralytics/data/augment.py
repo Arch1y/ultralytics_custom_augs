@@ -619,8 +619,7 @@ class Mosaic(BaseMixTransform):
     def _crop_by_bbox(self, labels_patch, crop_size):
         # crop by mask or random
         labels = labels_patch['instances']
-        img_path = labels_patch['im_file']
-        image = cv2.imread(img_path)
+        image = labels_patch['my_img']
         cls_instances = labels_patch['cls']
 
         rand_val = random.randint(0,10)            
@@ -1913,10 +1912,10 @@ class Albumentations:
 
             # Transforms
             T = [
-                A.Blur(p=0.01),
-                A.MedianBlur(p=0.01),
+                A.Blur(p=0.00),
+                A.MedianBlur(p=0.00),
                 A.ToGray(p=0.01),
-                A.CLAHE(p=0.01),
+                A.CLAHE(p=0.00),
                 A.RandomBrightnessContrast(p=0.0),
                 A.RandomGamma(p=0.0),
                 A.ImageCompression(quality_lower=75, p=0.0),
