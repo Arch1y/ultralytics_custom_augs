@@ -87,7 +87,8 @@ class BaseDataset(Dataset):
         self.max_buffer_length = min((self.ni, self.batch_size * 8, 1000)) if self.augment else 0
 
         # Cache images (options are cache = True, False, None, "ram", "disk")
-        self.ims, self.my_ims, self.im_hw0, self.im_hw = [None] * self.ni, [None] * self.ni, [None] * self.ni, [None] * self.ni
+        # self.ims, self.my_ims, self.im_hw0, self.im_hw = [None] * self.ni, [None] * self.ni, [None] * self.ni, [None] * self.ni
+        self.ims, self.im_hw0, self.im_hw = [None] * self.ni, [None] * self.ni, [None] * self.ni
         self.npy_files = [Path(f).with_suffix(".npy") for f in self.im_files]
         self.cache = cache.lower() if isinstance(cache, str) else "ram" if cache is True else None
         if self.cache == "ram" and self.check_cache_ram():
@@ -163,28 +164,31 @@ class BaseDataset(Dataset):
                 im = cv2.imread(f)  # BGR
             if im is None:
                 raise FileNotFoundError(f"Image Not Found {f}")
-            im_orig = im.copy()
+            # im_orig = im.copy()
             h0, w0 = im.shape[:2]  # orig hw
-            if rect_mode:  # resize long side to imgsz while maintaining aspect ratio
-                r = self.imgsz / max(h0, w0)  # ratio
-                if r != 1:  # if sizes are not equal
-                    w, h = (min(math.ceil(w0 * r), self.imgsz), min(math.ceil(h0 * r), self.imgsz))
-                    im = cv2.resize(im, (w, h), interpolation=cv2.INTER_LINEAR)
-            elif not (h0 == w0 == self.imgsz):  # resize by stretching image to square imgsz
-                im = cv2.resize(im, (self.imgsz, self.imgsz), interpolation=cv2.INTER_LINEAR)
+            # if rect_mode:  # resize long side to imgsz while maintaining aspect ratio
+            #     r = self.imgsz / max(h0, w0)  # ratio
+            #     if r != 1:  # if sizes are not equal
+            #         w, h = (min(math.ceil(w0 * r), self.imgsz), min(math.ceil(h0 * r), self.imgsz))
+            #         im = cv2.resize(im, (w, h), interpolation=cv2.INTER_LINEAR)
+            # elif not (h0 == w0 == self.imgsz):  # resize by stretching image to square imgsz
+            #     im = cv2.resize(im, (self.imgsz, self.imgsz), interpolation=cv2.INTER_LINEAR)
 
             # Add to buffer if training with augmentations
             if self.augment:
-                self.ims[i], self.my_ims[i], self.im_hw0[i], self.im_hw[i] = im, im_orig, (h0, w0), im.shape[:2]  # im, hw_original, hw_resized
+                # self.ims[i], self.my_ims[i], self.im_hw0[i], self.im_hw[i] = im, im_orig, (h0, w0), im.shape[:2]  # im, hw_original, hw_resized
+                self.ims[i], self.im_hw0[i], self.im_hw[i] = im, (h0, w0), im.shape[:2]  # im, hw_original, hw_resized
                 self.buffer.append(i)
                 if 1 < len(self.buffer) >= self.max_buffer_length:  # prevent empty buffer
                     j = self.buffer.pop(0)
                     if self.cache != "ram":
                         self.ims[j], self.im_hw0[j], self.im_hw[j] = None, None, None
 
-            return im, im_orig, (h0, w0), im.shape[:2]
+            # return im, im_orig, (h0, w0), im.shape[:2]
+            return im, (h0, w0), im.shape[:2]
 
-        return self.ims[i], self.my_ims[i], self.im_hw0[i], self.im_hw[i]
+        # return self.ims[i], self.my_ims[i], self.im_hw0[i], self.im_hw[i]
+        return self.ims[i], self.im_hw0[i], self.im_hw[i]
 
     def cache_images(self):
         """Cache images to memory or disk."""
@@ -291,7 +295,8 @@ class BaseDataset(Dataset):
         """Get and return label information from the dataset."""
         label = deepcopy(self.labels[index])  # requires deepcopy() https://github.com/ultralytics/ultralytics/pull/1948
         label.pop("shape", None)  # shape is for rect, remove it
-        label["img"], label['my_img'], label["ori_shape"], label["resized_shape"] = self.load_image(index)
+        # label["img"], label['my_img'], label["ori_shape"], label["resized_shape"] = self.load_image(index)
+        label["img"], label["ori_shape"], label["resized_shape"] = self.load_image(index)
         label["ratio_pad"] = (
             label["resized_shape"][0] / label["ori_shape"][0],
             label["resized_shape"][1] / label["ori_shape"][1],

@@ -619,7 +619,8 @@ class Mosaic(BaseMixTransform):
     def _crop_by_bbox(self, labels_patch, crop_size):
         # crop by mask or random
         labels = labels_patch['instances']
-        image = labels_patch['my_img']
+        # image = labels_patch['my_img']
+        image = labels_patch['img']
         cls_instances = labels_patch['cls']
 
         rand_val = random.randint(0,10)            
@@ -813,6 +814,7 @@ class Mosaic(BaseMixTransform):
             h_img, w_img = labels_patch['ori_shape']
             h = h_img if h_img < self.imgsz else self.imgsz
             w = w_img if w_img < self.imgsz else self.imgsz
+            # print(f"img shape {labels_patch['img'].shape}")
             # labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(img, labels_patch['instances'], labels_patch['cls'], (h, w))
             labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(labels_patch, (h, w))
             img = labels_patch['img']
