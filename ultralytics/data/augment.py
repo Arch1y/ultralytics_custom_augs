@@ -812,8 +812,8 @@ class Mosaic(BaseMixTransform):
             labels_patch = labels if i == 0 else labels["mix_labels"][i - 1]
             # Load image
             h_img, w_img = labels_patch['ori_shape']
-            h = h_img if h_img < 1024 else 1024
-            w = w_img if w_img < 1024 else 1024
+            h = h_img if h_img < self.imgsz else self.imgsz
+            w = w_img if w_img < self.imgsz else self.imgsz
             # labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(img, labels_patch['instances'], labels_patch['cls'], (h, w))
             labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(labels_patch, (h, w))
             img = labels_patch['img']
