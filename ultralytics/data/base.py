@@ -177,7 +177,8 @@ class BaseDataset(Dataset):
             # Add to buffer if training with augmentations
             if self.augment:
                 # self.ims[i], self.my_ims[i], self.im_hw0[i], self.im_hw[i] = im, im_orig, (h0, w0), im.shape[:2]  # im, hw_original, hw_resized
-                self.ims[i], self.im_hw0[i], self.im_hw[i] = im, (h0, w0), im.shape[:2]  # im, hw_original, hw_resized
+                # self.ims[i], self.im_hw0[i], self.im_hw[i] = im, (h0, w0), im.shape[:2]  # im, hw_original, hw_resized
+                self.ims[i], self.im_hw0[i], self.im_hw[i] = im, (h0, w0), (self.imgsz, self.imgsz)  # im, hw_original, hw_resized
                 self.buffer.append(i)
                 if 1 < len(self.buffer) >= self.max_buffer_length:  # prevent empty buffer
                     j = self.buffer.pop(0)
@@ -185,7 +186,8 @@ class BaseDataset(Dataset):
                         self.ims[j], self.im_hw0[j], self.im_hw[j] = None, None, None
 
             # return im, im_orig, (h0, w0), im.shape[:2]
-            return im, (h0, w0), im.shape[:2]
+            # return im, (h0, w0), im.shape[:2]
+            return im, (h0, w0), (self.imgsz, self.imgsz)
 
         # return self.ims[i], self.my_ims[i], self.im_hw0[i], self.im_hw[i]
         return self.ims[i], self.im_hw0[i], self.im_hw[i]

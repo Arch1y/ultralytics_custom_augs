@@ -812,8 +812,8 @@ class Mosaic(BaseMixTransform):
             labels_patch = labels if i == 0 else labels["mix_labels"][i - 1]
             # Load image
             h_img, w_img = labels_patch['ori_shape']
-            h = h_img if h_img < self.imgsz else self.imgsz
-            w = w_img if w_img < self.imgsz else self.imgsz
+            h = h_img if h_img < (self.imgsz // 2) else (self.imgsz // 2)
+            w = w_img if w_img < (self.imgsz // 2) else (self.imgsz // 2)
             # print(f"img shape {labels_patch['img'].shape}")
             # labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(img, labels_patch['instances'], labels_patch['cls'], (h, w))
             labels_patch['img'], labels_patch['instances'], labels_patch['cls'], (h, w) = self._crop_by_bbox(labels_patch, (h, w))
@@ -841,6 +841,7 @@ class Mosaic(BaseMixTransform):
             elif i == 8:  # top left
                 c = s - w, s + h0 - hp - h, s, s + h0 - hp
 
+            # padw, padh = [cord*2 for cord in c[:2]]
             padw, padh = c[:2]
             x1, y1, x2, y2 = (max(x, 0) for x in c)  # allocate coords
 
