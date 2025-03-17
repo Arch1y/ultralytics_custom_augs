@@ -174,3 +174,5 @@ calibration_*.npy
 data_test/
 data_test_2/
 mosaic.ipynb
+data_train/
+UGMK/
